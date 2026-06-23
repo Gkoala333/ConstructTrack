@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConstructTrack — Automated Operational Analytics Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #0f1b2d;
+    --navy-mid: #162032;
+    --navy-card: #1a2840;
+    --navy-border: #243656;
+    --blue-accent: #1e90ff;
+    --blue-light: #4db8ff;
+    --orange: #f97316;
+    --orange-light: #fb923c;
+    --green: #22c55e;
+    --green-light: #4ade80;
+    --red: #ef4444;
+    --red-light: #f87171;
+    --yellow: #eab308;
+    --yellow-light: #facc15;
+    --purple: #a855f7;
+    --teal: #14b8a6;
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --gradient-blue: linear-gradient(135deg, #1e90ff22, #1e90ff08);
+    --gradient-orange: linear-gradient(135deg, #f9731622, #f9731608);
+    --gradient-green: linear-gradient(135deg, #22c55e22, #22c55e08);
+    --gradient-red: linear-gradient(135deg, #ef444422, #ef444408);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--navy);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── TOP HEADER ── */
+  .top-header {
+    background: linear-gradient(90deg, #0a1628 0%, #0f1e38 50%, #0a1628 100%);
+    border-bottom: 1px solid var(--navy-border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px #00000060;
+  }
+  .logo-area { display:flex; align-items:center; gap:12px; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--blue-accent), var(--purple));
+    border-radius: 8px;
+    display: flex; align-items:center; justify-content:center;
+    font-size: 18px;
+    box-shadow: 0 0 16px #1e90ff44;
+  }
+  .logo-text { font-size:18px; font-weight:700; color: var(--text-primary); letter-spacing: 0.5px; }
+  .logo-sub { font-size:11px; color: var(--text-muted); margin-top:1px; }
+  .header-meta { display:flex; align-items:center; gap:20px; font-size:12px; color: var(--text-secondary); }
+  .header-meta .badge {
+    background: #22c55e22;
+    border: 1px solid #22c55e55;
+    color: var(--green);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    display:flex; align-items:center; gap:5px;
+  }
+  .live-dot { width:7px; height:7px; background:var(--green); border-radius:50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  /* ── TAB NAV ── */
+  .tab-nav {
+    background: #0d1826;
+    border-bottom: 1px solid var(--navy-border);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 20px;
+    gap: 2px;
+  }
+  .tab-nav::-webkit-scrollbar { display:none; }
+  .tab-btn {
+    padding: 11px 18px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex; align-items:center; gap:7px;
+  }
+  .tab-btn:hover { color: var(--text-secondary); background: #ffffff08; }
+  .tab-btn.active { color: var(--blue-accent); border-bottom-color: var(--blue-accent); background: #1e90ff0a; }
+  .tab-num {
+    background: var(--navy-card);
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .tab-btn.active .tab-num { background: #1e90ff22; color: var(--blue-accent); }
+
+  /* ── MAIN CONTENT ── */
+  .dashboard-panel { display:none; padding:20px 24px 32px; }
+  .dashboard-panel.active { display:block; }
+
+  /* ── PANEL HEADER ── */
+  .panel-header {
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin-bottom: 20px;
+  }
+  .panel-title { font-size:20px; font-weight:700; color: var(--text-primary); }
+  .panel-subtitle { font-size:12px; color: var(--text-muted); margin-top:3px; }
+  .panel-controls { display:flex; gap:10px; align-items:center; }
+  .ctrl-btn {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size:12px;
+    cursor:pointer;
+    display:flex; align-items:center; gap:5px;
+  }
+  .ctrl-btn:hover { border-color: var(--blue-accent); color: var(--blue-accent); }
+  .ctrl-btn.active { background: #1e90ff18; border-color: var(--blue-accent); color: var(--blue-accent); }
+  .filter-row {
+    display:flex; gap:8px; align-items:center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    color: var(--text-secondary);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    cursor:pointer;
+  }
+  .filter-chip.active { background: #1e90ff18; border-color: var(--blue-accent); color: var(--blue-accent); }
+  .filter-label { font-size:12px; color: var(--text-muted); }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid { display:grid; gap:14px; margin-bottom:20px; }
+  .kpi-grid-4 { grid-template-columns: repeat(4,1fr); }
+  .kpi-grid-5 { grid-template-columns: repeat(5,1fr); }
+  .kpi-grid-3 { grid-template-columns: repeat(3,1fr); }
+  .kpi-grid-6 { grid-template-columns: repeat(6,1fr); }
+  .kpi-card {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-1px); box-shadow: 0 6px 24px #00000040; }
+  .kpi-card::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+  }
+  .kpi-card.blue::before { background: linear-gradient(90deg, var(--blue-accent), var(--blue-light)); }
+  .kpi-card.orange::before { background: linear-gradient(90deg, var(--orange), var(--orange-light)); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), var(--green-light)); }
+  .kpi-card.red::before { background: linear-gradient(90deg, var(--red), var(--red-light)); }
+  .kpi-card.yellow::before { background: linear-gradient(90deg, var(--yellow), var(--yellow-light)); }
+  .kpi-card.purple::before { background: linear-gradient(90deg, var(--purple), #c084fc); }
+  .kpi-card.teal::before { background: linear-gradient(90deg, var(--teal), #2dd4bf); }
+  .kpi-label { font-size:11px; color: var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+  .kpi-value { font-size:28px; font-weight:700; color: var(--text-primary); line-height:1; }
+  .kpi-value.blue { color: var(--blue-light); }
+  .kpi-value.orange { color: var(--orange-light); }
+  .kpi-value.green { color: var(--green-light); }
+  .kpi-value.red { color: var(--red-light); }
+  .kpi-value.yellow { color: var(--yellow-light); }
+  .kpi-value.purple { color: #c084fc; }
+  .kpi-value.teal { color: #2dd4bf; }
+  .kpi-delta {
+    font-size:12px;
+    margin-top:6px;
+    display:flex; align-items:center; gap:4px;
+  }
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--red); }
+  .delta-neutral { color: var(--text-muted); }
+  .kpi-sparkline { margin-top:10px; height:32px; }
+  .kpi-sublabel { font-size:11px; color: var(--text-muted); margin-top:4px; }
+  .kpi-icon {
+    position:absolute; right:14px; top:14px;
+    font-size:22px; opacity:0.2;
+  }
+
+  /* ── CHART CONTAINERS ── */
+  .chart-grid { display:grid; gap:16px; }
+  .chart-grid-2 { grid-template-columns: 1fr 1fr; }
+  .chart-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .chart-grid-3-1 { grid-template-columns: 2fr 1fr; }
+  .chart-grid-1-2 { grid-template-columns: 1fr 2fr; }
+  .chart-box {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius: 10px;
+    padding: 18px;
+    position: relative;
+  }
+  .chart-box.span2 { grid-column: span 2; }
+  .chart-box.span3 { grid-column: span 3; }
+  .chart-title { font-size:13px; font-weight:600; color: var(--text-primary); margin-bottom:4px; }
+  .chart-subtitle { font-size:11px; color: var(--text-muted); margin-bottom:14px; }
+  .chart-canvas-wrap { position:relative; }
+
+  /* ── TABLES ── */
+  .data-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .data-table th {
+    text-align:left; padding:9px 12px;
+    background: #0d1826;
+    color: var(--text-muted);
+    font-size:11px; text-transform:uppercase; letter-spacing:0.6px;
+    border-bottom: 1px solid var(--navy-border);
+    font-weight:600;
+  }
+  .data-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #1e2d4520;
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+  .data-table tr:hover td { background: #ffffff04; }
+  .data-table td:first-child { color: var(--text-primary); font-weight:500; }
+
+  /* ── STATUS BADGES ── */
+  .badge-green { background:#22c55e22; color:var(--green); padding:2px 8px; border-radius:4px; font-size:11px; border:1px solid #22c55e33; }
+  .badge-red { background:#ef444422; color:var(--red); padding:2px 8px; border-radius:4px; font-size:11px; border:1px solid #ef444433; }
+  .badge-yellow { background:#eab30822; color:var(--yellow); padding:2px 8px; border-radius:4px; font-size:11px; border:1px solid #eab30833; }
+  .badge-blue { background:#1e90ff22; color:var(--blue-accent); padding:2px 8px; border-radius:4px; font-size:11px; border:1px solid #1e90ff33; }
+  .badge-orange { background:#f9731622; color:var(--orange); padding:2px 8px; border-radius:4px; font-size:11px; border:1px solid #f9731633; }
+  .badge-purple { background:#a855f722; color:var(--purple); padding:2px 8px; border-radius:4px; font-size:11px; border:1px solid #a855f733; }
+
+  /* ── PROGRESS BARS ── */
+  .progress-bar-wrap { background:#0d1826; border-radius:4px; height:6px; overflow:hidden; }
+  .progress-bar-fill { height:100%; border-radius:4px; transition: width 0.8s ease; }
+
+  /* ── HEAT MAP CELLS ── */
+  .heat-cell {
+    padding: 8px 10px;
+    border-radius: 5px;
+    font-size:12px;
+    font-weight:600;
+    text-align:center;
+  }
+  .heat-high { background:#ef444430; color:var(--red-light); }
+  .heat-mid  { background:#eab30830; color:var(--yellow-light); }
+  .heat-low  { background:#22c55e30; color:var(--green-light); }
+  .heat-na   { background:#1e293b; color:var(--text-muted); }
+
+  /* ── SECTION DIVIDER ── */
+  .section-sep { height:1px; background: var(--navy-border); margin: 18px 0; opacity:0.5; }
+
+  /* ── INSIGHT CARDS ── */
+  .insight-card {
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-left: 3px solid;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom:12px;
+  }
+  .insight-card.critical { border-left-color: var(--red); }
+  .insight-card.warning { border-left-color: var(--yellow); }
+  .insight-card.positive { border-left-color: var(--green); }
+  .insight-card.info { border-left-color: var(--blue-accent); }
+  .insight-tag { font-size:10px; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-bottom:5px; }
+  .insight-card.critical .insight-tag { color:var(--red); }
+  .insight-card.warning .insight-tag { color:var(--yellow); }
+  .insight-card.positive .insight-tag { color:var(--green); }
+  .insight-card.info .insight-tag { color:var(--blue-accent); }
+  .insight-text { font-size:13px; color:var(--text-primary); line-height:1.5; }
+  .insight-meta { font-size:11px; color:var(--text-muted); margin-top:5px; }
+
+  /* ── RISK MATRIX ── */
+  .risk-matrix { display:grid; grid-template-columns: repeat(5,1fr); gap:4px; }
+  .risk-cell {
+    aspect-ratio:1;
+    border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:700; color:#fff;
+    cursor:pointer;
+    transition: transform 0.1s;
+  }
+  .risk-cell:hover { transform:scale(1.05); }
+
+  /* ── SHAP BAR ── */
+  .shap-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .shap-label { font-size:12px; color:var(--text-secondary); width:180px; flex-shrink:0; text-align:right; }
+  .shap-bar-wrap { flex:1; background:#0d1826; height:20px; border-radius:4px; overflow:hidden; }
+  .shap-bar-fill { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:8px; font-size:11px; font-weight:600; color:#fff; }
+  .shap-val { font-size:12px; color:var(--text-muted); width:50px; text-align:right; }
+
+  /* ── PIPELINE MONITOR ── */
+  .pipeline-step {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 14px;
+    background: var(--navy-card);
+    border: 1px solid var(--navy-border);
+    border-radius:8px;
+    margin-bottom:8px;
+  }
+  .pipeline-icon { font-size:18px; }
+  .pipeline-name { font-size:13px; font-weight:600; color:var(--text-primary); }
+  .pipeline-meta { font-size:11px; color:var(--text-muted); }
+  .pipeline-status { margin-left:auto; }
+
+  /* ── DQ SCORE RING PLACEHOLDER ── */
+  .score-ring {
+    width:90px; height:90px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:700;
+    position:relative;
+    flex-shrink:0;
+  }
+
+  /* ── VENDOR RANK ROW ── */
+  .vendor-rank {
+    display:flex; align-items:center; gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid #1e2d4520;
+  }
+  .vendor-rank-num { font-size:13px; font-weight:700; color:var(--text-muted); width:22px; }
+  .vendor-name { font-size:13px; font-weight:600; color:var(--text-primary); flex:1; }
+  .vendor-bar-wrap { width:120px; background:#0d1826; height:8px; border-radius:4px; overflow:hidden; }
+  .vendor-bar { height:100%; border-radius:4px; }
+  .vendor-amt { font-size:12px; color:var(--text-secondary); width:70px; text-align:right; }
+  .vendor-score { width:50px; text-align:center; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:1200px) {
+    .kpi-grid-5 { grid-template-columns: repeat(3,1fr); }
+    .kpi-grid-4 { grid-template-columns: repeat(2,1fr); }
+    .chart-grid-2 { grid-template-columns:1fr; }
+    .chart-grid-3 { grid-template-columns:1fr; }
+  }
+
+  /* ── FOOTER ── */
+  .dash-footer {
+    margin-top:28px;
+    padding-top:14px;
+    border-top:1px solid var(--navy-border);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color:var(--text-muted);
+  }
+  .dash-footer a { color:var(--blue-accent); text-decoration:none; }
+
+  .tag { display:inline-block; background:#1e2d45; border:1px solid var(--navy-border); color:var(--text-muted); font-size:10px; padding:2px 7px; border-radius:4px; margin-right:4px; }
+
+  canvas { max-height: 300px; }
+</style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<div class="top-header">
+  <div class="logo-area">
+    <div class="logo-icon">🏗️</div>
+    <div>
+      <div class="logo-text">ConstructTrack</div>
+      <div class="logo-sub">Automated Operational Analytics Platform</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <span class="tag">Python</span><span class="tag">SQL</span><span class="tag">Airflow</span><span class="tag">AWS Redshift</span><span class="tag">Tableau</span>
+    <div class="badge"><span class="live-dot"></span> Pipeline Active — Last refresh: 07:42 AM</div>
+    <div style="color:var(--text-muted);">FY 2024–2025 · 20 Projects</div>
+  </div>
+</div>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab(0)">📊 <span>Executive Command Center</span> <span class="tab-num">D1</span></button>
+  <button class="tab-btn" onclick="showTab(1)">💰 <span>Financial Performance</span> <span class="tab-num">D2</span></button>
+  <button class="tab-btn" onclick="showTab(2)">⚙️ <span>Operational Performance</span> <span class="tab-num">D3</span></button>
+  <button class="tab-btn" onclick="showTab(3)">🤝 <span>Subcontractor Spend</span> <span class="tab-num">D4</span></button>
+  <button class="tab-btn" onclick="showTab(4)">🛡️ <span>Data Quality & Governance</span> <span class="tab-num">D5</span></button>
+  <button class="tab-btn" onclick="showTab(5)">🤖 <span>Anomaly Detection</span> <span class="tab-num">D6</span></button>
+  <button class="tab-btn" onclick="showTab(6)">🎯 <span>Executive Action Center</span> <span class="tab-num">D7</span></button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D1: EXECUTIVE COMMAND CENTER -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel active" id="panel-0">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Executive Command Center</div>
+      <div class="panel-subtitle">Real-time portfolio overview · CPI/SPI earned value analysis · Risk posture · Jan 2024 – Dec 2025</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">📅 YTD 2025</button>
+      <button class="ctrl-btn">📅 FY 2024</button>
+      <button class="ctrl-btn">🔄 Refresh</button>
+      <button class="ctrl-btn">⬇️ Export PDF</button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <span class="filter-label">Project Type:</span>
+    <span class="filter-chip active">All Projects</span>
+    <span class="filter-chip">Commercial</span>
+    <span class="filter-chip">Infrastructure</span>
+    <span class="filter-chip">Residential</span>
+    <span class="filter-chip">Industrial</span>
+    &nbsp;&nbsp;<span class="filter-label">Region:</span>
+    <span class="filter-chip active">All Regions</span>
+    <span class="filter-chip">Northeast</span>
+    <span class="filter-chip">Southeast</span>
+    <span class="filter-chip">West</span>
+  </div>
+
+  <!-- ROW 1: PRIMARY KPIs -->
+  <div class="kpi-grid kpi-grid-4" style="margin-bottom:14px;">
+    <div class="kpi-card blue">
+      <div class="kpi-icon">💼</div>
+      <div class="kpi-label">Total Portfolio Budget</div>
+      <div class="kpi-value blue">$284.7M</div>
+      <div class="kpi-delta delta-neutral">↗ +$12.4M vs prior year budget</div>
+      <div class="kpi-sublabel">Across 20 active projects</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-icon">💳</div>
+      <div class="kpi-label">Actual Cost to Date</div>
+      <div class="kpi-value orange">$219.3M</div>
+      <div class="kpi-delta delta-down">▲ $8.7M over earned value baseline</div>
+      <div class="kpi-sublabel">77.0% of total budget consumed</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-icon">📉</div>
+      <div class="kpi-label">Budget Variance (CV)</div>
+      <div class="kpi-value red">-$4.2M</div>
+      <div class="kpi-delta delta-up">⬆ Improved 12% vs Q3 2025</div>
+      <div class="kpi-sublabel">-1.9% of total budget · Within -5% threshold</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">Forecast at Completion (EAC)</div>
+      <div class="kpi-value green">$288.1M</div>
+      <div class="kpi-delta delta-down">↗ +$3.4M over BAC</div>
+      <div class="kpi-sublabel">+1.2% overrun vs BAC — monitor closely</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: EVM KPIs -->
+  <div class="kpi-grid kpi-grid-5" style="margin-bottom:18px;">
+    <div class="kpi-card yellow">
+      <div class="kpi-label">CPI (Cost Performance Index)</div>
+      <div class="kpi-value yellow">0.96</div>
+      <div class="kpi-delta delta-down">▼ Below 1.0 — cost overrun signal</div>
+      <div class="kpi-sublabel">Threshold: ≥ 1.0</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">SPI (Schedule Performance Index)</div>
+      <div class="kpi-value green">0.94</div>
+      <div class="kpi-delta delta-neutral">― Slightly behind schedule</div>
+      <div class="kpi-sublabel">Threshold: ≥ 0.95</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Earned Value (EV)</div>
+      <div class="kpi-value blue">$211.0M</div>
+      <div class="kpi-delta delta-neutral">74.1% planned work completed</div>
+      <div class="kpi-sublabel">BCWP vs BCWS</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Active Projects</div>
+      <div class="kpi-value purple">20</div>
+      <div class="kpi-delta delta-neutral">14 on-track · 6 at-risk</div>
+      <div class="kpi-sublabel">Across 4 regions</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">High-Risk Projects</div>
+      <div class="kpi-value red">4</div>
+      <div class="kpi-delta delta-down">▲ +1 vs prior month</div>
+      <div class="kpi-sublabel">Requires exec intervention</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="chart-grid chart-grid-3-1" style="margin-bottom:16px;">
+    <div class="chart-box">
+      <div class="chart-title">Portfolio Budget vs Actual vs EAC — Monthly Trend</div>
+      <div class="chart-subtitle">Cumulative cost performance · Jan 2024 – Dec 2025</div>
+      <div class="chart-canvas-wrap"><canvas id="execTrendChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">CPI / SPI Index Trend</div>
+      <div class="chart-subtitle">Earned Value Indices · Monthly</div>
+      <div class="chart-canvas-wrap"><canvas id="cpiSpiChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="chart-grid chart-grid-2">
+    <div class="chart-box">
+      <div class="chart-title">Project Health Heatmap</div>
+      <div class="chart-subtitle">CPI × SPI matrix across 20 projects · Red = At Risk</div>
+      <table class="data-table" style="font-size:12px;">
+        <thead><tr><th>Project</th><th>Type</th><th>Budget</th><th>CPI</th><th>SPI</th><th>Health</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td>Phoenix Tower</td><td>Commercial</td><td>$24.2M</td><td><span class="heat-cell heat-high">0.88</span></td><td><span class="heat-cell heat-high">0.82</span></td><td><span class="badge-red">Critical</span></td><td>🔴 High</td></tr>
+          <tr><td>Harbor Bridge</td><td>Infrastructure</td><td>$38.1M</td><td><span class="heat-cell heat-mid">0.93</span></td><td><span class="heat-cell heat-high">0.79</span></td><td><span class="badge-red">At Risk</span></td><td>🔴 High</td></tr>
+          <tr><td>Summit Plaza</td><td>Commercial</td><td>$19.6M</td><td><span class="heat-cell heat-high">0.89</span></td><td><span class="heat-cell heat-mid">0.91</span></td><td><span class="badge-yellow">Monitor</span></td><td>🟡 Med</td></tr>
+          <tr><td>Metro Rail Ext.</td><td>Infrastructure</td><td>$52.4M</td><td><span class="heat-cell heat-mid">0.95</span></td><td><span class="heat-cell heat-mid">0.94</span></td><td><span class="badge-yellow">Monitor</span></td><td>🟡 Med</td></tr>
+          <tr><td>Riverside Apts</td><td>Residential</td><td>$12.8M</td><td><span class="heat-cell heat-low">1.02</span></td><td><span class="heat-cell heat-low">1.01</span></td><td><span class="badge-green">On Track</span></td><td>🟢 Low</td></tr>
+          <tr><td>GreenField Ind.</td><td>Industrial</td><td>$31.5M</td><td><span class="heat-cell heat-low">1.04</span></td><td><span class="heat-cell heat-low">0.98</span></td><td><span class="badge-green">On Track</span></td><td>🟢 Low</td></tr>
+          <tr><td>Skyline Office</td><td>Commercial</td><td>$17.3M</td><td><span class="heat-cell heat-low">1.01</span></td><td><span class="heat-cell heat-low">1.03</span></td><td><span class="badge-green">On Track</span></td><td>🟢 Low</td></tr>
+          <tr><td>Coastal Highway</td><td>Infrastructure</td><td>$44.6M</td><td><span class="heat-cell heat-high">0.87</span></td><td><span class="heat-cell heat-high">0.85</span></td><td><span class="badge-red">Critical</span></td><td>🔴 High</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Budget Allocation by Project Type</div>
+      <div class="chart-subtitle">Portfolio distribution · Cost center breakdown</div>
+      <div class="chart-canvas-wrap"><canvas id="budgetPieChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="dash-footer">
+    <div>ConstructTrack Analytics · Executive Command Center D1 · Data as of Dec 31, 2025 · Pipeline: Airflow/AWS Redshift</div>
+    <div>KPI Governance Framework v3.2 · Earned Value Management (EVM) · PMI Standard</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D2: FINANCIAL PERFORMANCE ANALYTICS -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel" id="panel-1">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Financial Performance Analytics</div>
+      <div class="panel-subtitle">Budget vs Actual · Cost Category Decomposition · Rolling Forecast Accuracy · Variance Waterfall</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">2025</button>
+      <button class="ctrl-btn">2024</button>
+      <button class="ctrl-btn">Both Years</button>
+      <button class="ctrl-btn">⬇️ Export</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid kpi-grid-4" style="margin-bottom:18px;">
+    <div class="kpi-card green">
+      <div class="kpi-label">Forecast Accuracy (MAPE)</div>
+      <div class="kpi-value green">94.1%</div>
+      <div class="kpi-delta delta-up">▲ +2.3pp vs Q3 2025</div>
+      <div class="kpi-sublabel">3-month rolling average</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Total Cost Overrun</div>
+      <div class="kpi-value red">$4.2M</div>
+      <div class="kpi-delta delta-up">▼ -12% vs unplanned variance baseline</div>
+      <div class="kpi-sublabel">12% reduction achieved via ML detection</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Labor Cost (% of Total)</div>
+      <div class="kpi-value orange">41.2%</div>
+      <div class="kpi-delta delta-down">▲ +1.8pp vs plan</div>
+      <div class="kpi-sublabel">$90.4M · Largest cost driver</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Subcontractor Spend</div>
+      <div class="kpi-value blue">$67.3M</div>
+      <div class="kpi-delta delta-down">▲ +$4.8M vs budget</div>
+      <div class="kpi-sublabel">30.7% of total actual cost</div>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2" style="margin-bottom:16px;">
+    <div class="chart-box">
+      <div class="chart-title">Budget vs Actual — Monthly Trend by Cost Category</div>
+      <div class="chart-subtitle">Stacked comparison · Labor / Material / Equipment / Subcontractor</div>
+      <div class="chart-canvas-wrap"><canvas id="costCatChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Variance Waterfall — Cost Decomposition</div>
+      <div class="chart-subtitle">Where budget variance originates · 2025 YTD</div>
+      <div class="chart-canvas-wrap"><canvas id="waterfallChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2">
+    <div class="chart-box">
+      <div class="chart-title">Rolling 3-Month Forecast Accuracy</div>
+      <div class="chart-subtitle">Predicted vs Actual Cost · Confidence Band ±5%</div>
+      <div class="chart-canvas-wrap"><canvas id="forecastAccChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Cost Category Mix — Actual vs Planned</div>
+      <div class="chart-subtitle">Budget allocation breakdown</div>
+      <div class="chart-canvas-wrap" style="max-height:260px;"><canvas id="costMixChart"></canvas></div>
+      <div style="margin-top:14px;">
+        <table class="data-table">
+          <thead><tr><th>Category</th><th>Budget</th><th>Actual</th><th>Variance</th><th>Var %</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>🧑‍🔧 Labor</td><td>$87.5M</td><td>$90.4M</td><td style="color:var(--red)">+$2.9M</td><td style="color:var(--red)">+3.3%</td><td><span class="badge-yellow">Over</span></td></tr>
+            <tr><td>🧱 Material</td><td>$58.2M</td><td>$55.8M</td><td style="color:var(--green)">-$2.4M</td><td style="color:var(--green)">-4.1%</td><td><span class="badge-green">Under</span></td></tr>
+            <tr><td>🏗️ Equipment</td><td>$24.6M</td><td>$25.8M</td><td style="color:var(--red)">+$1.2M</td><td style="color:var(--red)">+4.9%</td><td><span class="badge-yellow">Over</span></td></tr>
+            <tr><td>👷 Subcontractor</td><td>$62.5M</td><td>$67.3M</td><td style="color:var(--red)">+$4.8M</td><td style="color:var(--red)">+7.7%</td><td><span class="badge-red">Critical</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D3: OPERATIONAL PERFORMANCE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel" id="panel-2">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Operational Performance Analytics</div>
+      <div class="panel-subtitle">Schedule · Labor Productivity · Resource Utilization · Delay Analysis · Task Completion</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">All Projects</button>
+      <button class="ctrl-btn">At-Risk Only</button>
+      <button class="ctrl-btn">⬇️ Export</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid kpi-grid-5" style="margin-bottom:18px;">
+    <div class="kpi-card green">
+      <div class="kpi-label">SPI — Portfolio Avg</div>
+      <div class="kpi-value green">0.94</div>
+      <div class="kpi-delta delta-down">▼ Behind schedule — action needed</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Task Completion Rate</div>
+      <div class="kpi-value blue">87.4%</div>
+      <div class="kpi-delta delta-up">▲ +3.2pp vs prior month</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Avg Delay (Days)</div>
+      <div class="kpi-value yellow">11.3d</div>
+      <div class="kpi-delta delta-down">▲ +2.1d vs last quarter</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Resource Utilization</div>
+      <div class="kpi-value orange">78.6%</div>
+      <div class="kpi-delta delta-neutral">― Target: 80–90%</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Labor Productivity Index</div>
+      <div class="kpi-value teal">0.92</div>
+      <div class="kpi-delta delta-down">▼ Below 1.0 target</div>
+    </div>
+  </div>
+
+  <!-- Gantt-style -->
+  <div class="chart-box" style="margin-bottom:16px;">
+    <div class="chart-title">Project Schedule — Gantt Overview (Planned vs Actual Progress)</div>
+    <div class="chart-subtitle">Timeline view · All 20 projects · Shaded = actual · Outline = planned · Red bar = delay</div>
+    <div style="overflow-x:auto; padding-bottom:4px;">
+      <table style="width:100%; border-collapse:collapse; min-width:900px; font-size:12px;">
+        <thead>
+          <tr style="background:#0d1826; color:var(--text-muted); text-transform:uppercase; font-size:10px; letter-spacing:0.6px;">
+            <th style="padding:8px 12px; text-align:left; width:170px;">Project</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q1'24</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q2'24</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q3'24</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q4'24</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q1'25</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q2'25</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q3'25</th>
+            <th style="padding:8px 6px; text-align:center; width:52px;">Q4'25</th>
+            <th style="padding:8px; text-align:center;">Completion</th>
+            <th style="padding:8px; text-align:center;">Delay</th>
+          </tr>
+        </thead>
+        <tbody id="ganttBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2">
+    <div class="chart-box">
+      <div class="chart-title">Labor Productivity — Output per Labor Hour</div>
+      <div class="chart-subtitle">Monthly trend by project category</div>
+      <div class="chart-canvas-wrap"><canvas id="laborProdChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Resource Utilization Matrix</div>
+      <div class="chart-subtitle">Crew / Equipment allocation by project · % utilized</div>
+      <div class="chart-canvas-wrap"><canvas id="resourceMatrixChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D4: SUBCONTRACTOR SPEND ANALYTICS -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel" id="panel-3">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Subcontractor Spend Analytics</div>
+      <div class="panel-subtitle">Vendor Performance · Contract Utilization · Invoice Accuracy · Pareto Analysis · Scorecards</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">All Vendors</button>
+      <button class="ctrl-btn">Top 10</button>
+      <button class="ctrl-btn">⬇️ Export</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid kpi-grid-4" style="margin-bottom:18px;">
+    <div class="kpi-card orange">
+      <div class="kpi-label">Total Subcontractor Spend</div>
+      <div class="kpi-value orange">$67.3M</div>
+      <div class="kpi-delta delta-down">▲ +7.7% over contract value</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Contract Utilization Rate</div>
+      <div class="kpi-value yellow">107.7%</div>
+      <div class="kpi-delta delta-down">▲ Exceeds contracted value</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Invoice Accuracy Rate</div>
+      <div class="kpi-value red">91.4%</div>
+      <div class="kpi-delta delta-neutral">― Target: ≥ 97%</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Late Deliveries (30d+)</div>
+      <div class="kpi-value blue">23</div>
+      <div class="kpi-delta delta-down">▲ +5 vs prior quarter</div>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2" style="margin-bottom:16px;">
+    <div class="chart-box">
+      <div class="chart-title">Pareto Analysis — Subcontractor Spend Concentration</div>
+      <div class="chart-subtitle">80/20 rule · Top vendors driving majority of spend</div>
+      <div class="chart-canvas-wrap"><canvas id="paretoChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Vendor Rankings — Spend vs Performance Score</div>
+      <div class="chart-subtitle">Sorted by total spend · Performance = Delivery + Quality + Invoice accuracy</div>
+      <div id="vendorRankList"></div>
+    </div>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">Vendor Performance Scorecard</div>
+    <div class="chart-subtitle">Top 12 subcontractors · Multi-dimensional performance assessment</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vendor</th><th>Contract Value</th><th>Actual Spend</th><th>Utilization</th>
+          <th>Invoice Accuracy</th><th>On-Time Delivery</th><th>Quality Score</th>
+          <th>Late Invoices</th><th>Overall Score</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Apex Concrete Co.</td><td>$12.4M</td><td>$14.1M</td><td style="color:var(--red)">113.7%</td><td style="color:var(--red)">88.2%</td><td style="color:var(--yellow)">91.0%</td><td>82</td><td style="color:var(--red)">7</td><td>74/100</td><td><span class="badge-yellow">Watch</span></td></tr>
+        <tr><td>Sterling Steel LLC</td><td>$10.8M</td><td>$11.2M</td><td style="color:var(--yellow)">103.7%</td><td style="color:var(--green)">97.8%</td><td style="color:var(--green)">96.0%</td><td>94</td><td style="color:var(--green)">1</td><td>93/100</td><td><span class="badge-green">Preferred</span></td></tr>
+        <tr><td>BuildRight Mech.</td><td>$9.2M</td><td>$10.9M</td><td style="color:var(--red)">118.5%</td><td style="color:var(--red)">84.1%</td><td style="color:var(--red)">78.0%</td><td>71</td><td style="color:var(--red)">11</td><td>62/100</td><td><span class="badge-red">At Risk</span></td></tr>
+        <tr><td>PrecisionElec Inc.</td><td>$8.5M</td><td>$8.3M</td><td style="color:var(--green)">97.6%</td><td style="color:var(--green)">99.1%</td><td style="color:var(--green)">98.0%</td><td>97</td><td style="color:var(--green)">0</td><td>98/100</td><td><span class="badge-green">Preferred</span></td></tr>
+        <tr><td>TerraGrade Civil</td><td>$7.9M</td><td>$8.6M</td><td style="color:var(--yellow)">108.9%</td><td style="color:var(--yellow)">92.4%</td><td style="color:var(--yellow)">88.0%</td><td>86</td><td style="color:var(--yellow)">4</td><td>81/100</td><td><span class="badge-yellow">Watch</span></td></tr>
+        <tr><td>NorthStar HVAC</td><td>$6.2M</td><td>$6.4M</td><td style="color:var(--yellow)">103.2%</td><td style="color:var(--green)">96.7%</td><td style="color:var(--green)">94.0%</td><td>91</td><td style="color:var(--green)">2</td><td>89/100</td><td><span class="badge-green">Preferred</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D5: DATA QUALITY & GOVERNANCE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel" id="panel-4">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Data Quality & Governance Dashboard</div>
+      <div class="panel-subtitle">Enterprise DQ Monitoring · Pipeline Health · Validation Trends · Airflow Orchestration Status</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">Live View</button>
+      <button class="ctrl-btn">7-Day History</button>
+      <button class="ctrl-btn">30-Day Trend</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid kpi-grid-5" style="margin-bottom:18px;">
+    <div class="kpi-card green">
+      <div class="kpi-label">Overall DQ Score</div>
+      <div class="kpi-value green">99.2%</div>
+      <div class="kpi-delta delta-up">▲ +0.4pp this week</div>
+      <div class="kpi-sublabel">Threshold: ≥ 99%</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Validation Pass Rate</div>
+      <div class="kpi-value blue">99.4%</div>
+      <div class="kpi-delta delta-up">▲ 527,841 / 531,118 records</div>
+      <div class="kpi-sublabel">Across all 10 tables</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Missing Records</div>
+      <div class="kpi-value red">2,847</div>
+      <div class="kpi-delta delta-up">▼ -312 vs prior week</div>
+      <div class="kpi-sublabel">0.54% of total records</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Duplicate Records</div>
+      <div class="kpi-value yellow">430</div>
+      <div class="kpi-delta delta-up">▼ -91 vs prior week</div>
+      <div class="kpi-sublabel">Auto-deduplication active</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Pipeline Success Rate</div>
+      <div class="kpi-value teal">99.7%</div>
+      <div class="kpi-delta delta-up">▲ 298/299 DAG runs</div>
+      <div class="kpi-sublabel">Airflow · AWS Redshift</div>
+    </div>
+  </div>
+
+  <!-- Pipeline Monitor -->
+  <div class="chart-box" style="margin-bottom:16px;">
+    <div class="chart-title">Airflow ETL Pipeline Monitor — Real-Time DAG Status</div>
+    <div class="chart-subtitle">Last run: 07:42 AM · All pipelines healthy</div>
+    <div style="margin-top:12px;">
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🔄</div>
+        <div>
+          <div class="pipeline-name">erp_extract_labor_costs</div>
+          <div class="pipeline-meta">ERP → S3 · 182,441 records · Runtime: 4m 12s · Schedule: 0 6 * * *</div>
+        </div>
+        <div class="pipeline-status"><span class="badge-green">✓ Success</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🔄</div>
+        <div>
+          <div class="pipeline-name">pms_extract_project_phases</div>
+          <div class="pipeline-meta">ProjectMgmt System → S3 · 94,230 records · Runtime: 2m 48s · Schedule: 0 6 * * *</div>
+        </div>
+        <div class="pipeline-status"><span class="badge-green">✓ Success</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🔄</div>
+        <div>
+          <div class="pipeline-name">procurement_vendor_invoices</div>
+          <div class="pipeline-meta">Procurement → S3 · 67,882 records · Runtime: 1m 58s · Schedule: 0 6 * * *</div>
+        </div>
+        <div class="pipeline-status"><span class="badge-green">✓ Success</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">⚙️</div>
+        <div>
+          <div class="pipeline-name">transform_cost_aggregations</div>
+          <div class="pipeline-meta">Python + dbt · SQL Transforms · Redshift · Runtime: 7m 34s</div>
+        </div>
+        <div class="pipeline-status"><span class="badge-green">✓ Success</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🤖</div>
+        <div>
+          <div class="pipeline-name">anomaly_detection_scoring</div>
+          <div class="pipeline-meta">Random Forest · AUC 0.87 · 531,118 records scored · Runtime: 3m 22s</div>
+        </div>
+        <div class="pipeline-status"><span class="badge-green">✓ Success</span></div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">✅</div>
+        <div>
+          <div class="pipeline-name">dq_validation_checks</div>
+          <div class="pipeline-meta">Great Expectations · 47 validation rules · 44 passed · 3 warnings</div>
+        </div>
+        <div class="pipeline-status"><span class="badge-yellow">⚠ Warnings</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2">
+    <div class="chart-box">
+      <div class="chart-title">Validation Pass Rate — 30-Day Trend</div>
+      <div class="chart-subtitle">Daily DQ score per data domain</div>
+      <div class="chart-canvas-wrap"><canvas id="dqTrendChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">DQ Issues by Table & Category</div>
+      <div class="chart-subtitle">Missing / Duplicate / Type Error / Referential breakdown</div>
+      <table class="data-table">
+        <thead><tr><th>Table</th><th>Records</th><th>Missing</th><th>Dupes</th><th>Type Err</th><th>Ref. Err</th><th>DQ Score</th></tr></thead>
+        <tbody>
+          <tr><td>labor</td><td>182,441</td><td style="color:var(--green)">214</td><td style="color:var(--green)">89</td><td>12</td><td>0</td><td><span class="badge-green">99.7%</span></td></tr>
+          <tr><td>cost</td><td>194,822</td><td style="color:var(--yellow)">1,247</td><td style="color:var(--yellow)">201</td><td>48</td><td>3</td><td><span class="badge-yellow">99.2%</span></td></tr>
+          <tr><td>project_phases</td><td>94,230</td><td style="color:var(--green)">134</td><td style="color:var(--green)">12</td><td>5</td><td>1</td><td><span class="badge-green">99.8%</span></td></tr>
+          <tr><td>vendor</td><td>12,450</td><td style="color:var(--green)">22</td><td style="color:var(--green)">8</td><td>0</td><td>0</td><td><span class="badge-green">99.8%</span></td></tr>
+          <tr><td>contracts</td><td>8,740</td><td style="color:var(--green)">18</td><td style="color:var(--green)">4</td><td>2</td><td>0</td><td><span class="badge-green">99.7%</span></td></tr>
+          <tr><td>budget</td><td>38,435</td><td style="color:var(--red)">1,212</td><td style="color:var(--yellow)">116</td><td>27</td><td>9</td><td><span class="badge-red">96.8%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D6: ANOMALY DETECTION CENTER -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel" id="panel-5">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Anomaly Detection Center</div>
+      <div class="panel-subtitle">Random Forest ML Model · AUC = 0.87 · SHAP Feature Importance · Risk Scoring · Root Cause Analysis</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">Current Month</button>
+      <button class="ctrl-btn">All History</button>
+      <button class="ctrl-btn">High-Risk Only</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid kpi-grid-4" style="margin-bottom:18px;">
+    <div class="kpi-card purple">
+      <div class="kpi-label">Model AUC-ROC Score</div>
+      <div class="kpi-value purple">0.87</div>
+      <div class="kpi-delta delta-up">▲ Excellent discrimination (target: ≥ 0.80)</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Anomalies Detected (30d)</div>
+      <div class="kpi-value red">47</div>
+      <div class="kpi-delta delta-down">▲ +8 vs prior month</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">High-Risk Score Projects</div>
+      <div class="kpi-value orange">4</div>
+      <div class="kpi-delta delta-neutral">P(risk) ≥ 0.75 threshold</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Cost Variance Reduction</div>
+      <div class="kpi-value green">-12%</div>
+      <div class="kpi-delta delta-up">▲ Via predictive intervention</div>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2" style="margin-bottom:16px;">
+    <div class="chart-box">
+      <div class="chart-title">SHAP Feature Importance — Random Forest Model</div>
+      <div class="chart-subtitle">Top drivers of cost overrun anomaly prediction · Shapley values</div>
+      <div id="shapBars" style="margin-top:12px; padding-right:8px;"></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Anomaly Probability Distribution</div>
+      <div class="chart-subtitle">Risk score histogram · All 531k scored records</div>
+      <div class="chart-canvas-wrap"><canvas id="riskDistChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid chart-grid-2">
+    <div class="chart-box">
+      <div class="chart-title">Project Risk Matrix — CPI vs Anomaly Score</div>
+      <div class="chart-subtitle">Bubble size = budget · Color = risk tier</div>
+      <div class="chart-canvas-wrap"><canvas id="riskMatrixChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">High-Risk Project Phases — Anomaly Breakdown</div>
+      <div class="chart-subtitle">Phase-level risk scoring · Top 4 at-risk projects</div>
+      <table class="data-table">
+        <thead><tr><th>Project</th><th>Phase</th><th>Risk Score</th><th>Anomaly P(%)</th><th>Key Driver</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>Phoenix Tower</td><td>Structural</td><td><span class="badge-red">0.91</span></td><td style="color:var(--red)">91%</td><td>SubCon Overrun</td><td><span class="badge-red">Intervene</span></td></tr>
+          <tr><td>Coastal Highway</td><td>Foundation</td><td><span class="badge-red">0.88</span></td><td style="color:var(--red)">88%</td><td>Labor Hours +42%</td><td><span class="badge-red">Intervene</span></td></tr>
+          <tr><td>Harbor Bridge</td><td>Procurement</td><td><span class="badge-orange">0.79</span></td><td style="color:var(--orange)">79%</td><td>Material Cost +18%</td><td><span class="badge-yellow">Monitor</span></td></tr>
+          <tr><td>Summit Plaza</td><td>MEP</td><td><span class="badge-orange">0.76</span></td><td style="color:var(--orange)">76%</td><td>Schedule Slip</td><td><span class="badge-yellow">Monitor</span></td></tr>
+          <tr><td>Metro Rail Ext.</td><td>Civil</td><td><span class="badge-yellow">0.64</span></td><td style="color:var(--yellow)">64%</td><td>CPI Degradation</td><td><span class="badge-blue">Review</span></td></tr>
+          <tr><td>NorthPark Dev.</td><td>Finish</td><td><span class="badge-green">0.31</span></td><td style="color:var(--green)">31%</td><td>Minor Delays</td><td><span class="badge-green">On Watch</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- D7: EXECUTIVE ACTION CENTER -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dashboard-panel" id="panel-6">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Executive Action Center</div>
+      <div class="panel-subtitle">AI-Generated Insights · Top Risks · Optimization Opportunities · Projects Requiring Intervention</div>
+    </div>
+    <div class="panel-controls">
+      <button class="ctrl-btn active">Dec 2025</button>
+      <button class="ctrl-btn">Generate Report</button>
+      <button class="ctrl-btn">⬇️ Export PDF</button>
+    </div>
+  </div>
+
+  <!-- Priority Score Board -->
+  <div class="kpi-grid kpi-grid-4" style="margin-bottom:18px;">
+    <div class="kpi-card red">
+      <div class="kpi-label">Projects Requiring Intervention</div>
+      <div class="kpi-value red">4</div>
+      <div class="kpi-delta delta-down">Exec action required this week</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Active Risk Items</div>
+      <div class="kpi-value yellow">17</div>
+      <div class="kpi-delta delta-neutral">6 critical · 11 elevated</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Optimization Opportunities</div>
+      <div class="kpi-value green">8</div>
+      <div class="kpi-delta delta-up">~$3.2M recoverable value</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Decisions Pending</div>
+      <div class="kpi-value blue">12</div>
+      <div class="kpi-delta delta-neutral">3 overdue · 9 this week</div>
+    </div>
+  </div>
+
+  <!-- Narrative Insights -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+    <div>
+      <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.8px;">🔴 CRITICAL — Immediate Action Required</div>
+
+      <div class="insight-card critical">
+        <div class="insight-tag">💰 Financial Risk · Phoenix Tower</div>
+        <div class="insight-text">Project Phoenix Tower exceeds budget by <strong>8.2%</strong> ($1.99M over), driven primarily by <strong>subcontractor overruns (+$1.4M)</strong> in the structural phase and unplanned rework in MEP scope. CPI = 0.88. EAC projects a final overrun of <strong>$2.3M</strong>. Contract re-negotiation with Apex Concrete recommended within 5 business days.</div>
+        <div class="insight-meta">📅 Detected: Dec 18, 2025 · Risk Score: 0.91 · Confidence: 94%</div>
+      </div>
+
+      <div class="insight-card critical">
+        <div class="insight-tag">⏱️ Schedule Risk · Coastal Highway</div>
+        <div class="insight-text">Coastal Highway is <strong>31 days behind schedule</strong> with SPI = 0.85. Foundation phase labor hours exceeded planned by <strong>+42%</strong> due to adverse soil conditions (unforeseen geotechnical requirements). Current trajectory extends completion from Mar 2026 to <strong>May 2026</strong>, risking <strong>$890K in liquidated damages</strong>.</div>
+        <div class="insight-meta">📅 Detected: Dec 14, 2025 · Anomaly Score: 0.88 · Delay: +31 days</div>
+      </div>
+
+      <div class="insight-card warning">
+        <div class="insight-tag">📦 Procurement Risk · Harbor Bridge</div>
+        <div class="insight-text">Harbor Bridge procurement phase shows <strong>material cost inflation of +18%</strong> ($720K over plan), driven by steel price volatility. Invoice accuracy from primary vendor <strong>TerraGrade Civil dropped to 88.2%</strong> this month. Recommend locking 6-month forward contracts before Q1 2026 procurement window opens.</div>
+        <div class="insight-meta">📅 Detected: Dec 20, 2025 · Anomaly Score: 0.79 · Impact: $720K</div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.8px;">🟢 POSITIVE — Performance Highlights</div>
+
+      <div class="insight-card positive">
+        <div class="insight-tag">✅ ML Impact · Cost Variance Reduction</div>
+        <div class="insight-text">The Random Forest anomaly detection model (AUC 0.87) has contributed to a <strong>12% reduction in unplanned cost variance</strong> portfolio-wide since deployment in Q1 2025. Early detection of 47 cost anomalies this month alone, with an estimated <strong>$2.1M in avoided overruns</strong>. Model retraining scheduled for Q1 2026.</div>
+        <div class="insight-meta">Model Performance: AUC 0.87 · Precision 0.84 · Recall 0.89 · F1 0.86</div>
+      </div>
+
+      <div class="insight-card positive">
+        <div class="insight-tag">🏆 Top Performer · GreenField Industrial</div>
+        <div class="insight-text">GreenField Industrial Park is tracking <strong>2.1% under budget</strong> with CPI = 1.04 and SPI = 0.98 — the strongest earned value performance in the portfolio. Productivity benchmarks from this project have been packaged as <strong>best-practice templates</strong> for Q1 2026 project onboarding.</div>
+        <div class="insight-meta">Budget: $31.5M · Savings to date: $661K · SPI: 0.98</div>
+      </div>
+
+      <div class="insight-card info">
+        <div class="insight-tag">📊 Opportunity · Subcontractor Consolidation</div>
+        <div class="insight-text">Analysis shows <strong>top 3 vendors account for 46.8% of spend</strong> yet achieve the highest performance scores (avg 93/100). Consolidating scope to preferred vendors (PrecisionElec, Sterling Steel, NorthStar HVAC) could yield <strong>$3.2M in negotiated savings</strong> annually through volume discounts and reduced invoice disputes.</div>
+        <div class="insight-meta">Opportunity Value: ~$3.2M · Implementation: Q1 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Priority Table -->
+  <div class="chart-box">
+    <div class="chart-title">Prioritized Action Register — Executive Decision Queue</div>
+    <div class="chart-subtitle">Ranked by financial impact × urgency score · Owner assignment required</div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Project</th><th>Action Required</th><th>Financial Impact</th><th>Urgency</th><th>Owner</th><th>Due Date</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Phoenix Tower</td><td>Re-negotiate Apex Concrete scope & pricing</td><td style="color:var(--red)">-$1.99M</td><td><span class="badge-red">Critical</span></td><td>VP Finance</td><td>Dec 27</td><td><span class="badge-red">Overdue</span></td></tr>
+        <tr><td>2</td><td>Coastal Highway</td><td>Authorize emergency crew acceleration plan</td><td style="color:var(--red)">-$890K LD risk</td><td><span class="badge-red">Critical</span></td><td>PMO Director</td><td>Dec 30</td><td><span class="badge-yellow">In Review</span></td></tr>
+        <tr><td>3</td><td>Harbor Bridge</td><td>Lock forward steel contracts before Q1</td><td style="color:var(--yellow)">-$720K risk</td><td><span class="badge-orange">High</span></td><td>Procurement</td><td>Jan 10</td><td><span class="badge-blue">Scheduled</span></td></tr>
+        <tr><td>4</td><td>Portfolio</td><td>Consolidate to preferred vendor tier</td><td style="color:var(--green)">+$3.2M savings</td><td><span class="badge-orange">High</span></td><td>VP Operations</td><td>Jan 15</td><td><span class="badge-blue">Analysis</span></td></tr>
+        <tr><td>5</td><td>Summit Plaza</td><td>MEP phase scope review & schedule recovery</td><td style="color:var(--yellow)">-$320K risk</td><td><span class="badge-yellow">Medium</span></td><td>Project Manager</td><td>Jan 8</td><td><span class="badge-blue">Scheduled</span></td></tr>
+        <tr><td>6</td><td>BuildRight Mech.</td><td>Performance improvement plan or replace</td><td style="color:var(--yellow)">-$280K invoices</td><td><span class="badge-yellow">Medium</span></td><td>Procurement</td><td>Jan 20</td><td><span class="badge-blue">Pending</span></td></tr>
+        <tr><td>7</td><td>Data Quality</td><td>Resolve budget table DQ issues (96.8%)</td><td>Governance risk</td><td><span class="badge-yellow">Medium</span></td><td>Analytics Eng.</td><td>Jan 5</td><td><span class="badge-blue">In Progress</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dash-footer">
+    <div>ConstructTrack Analytics · Executive Action Center D7 · AI-augmented insights via Random Forest (AUC 0.87) · Dec 31, 2025</div>
+    <div>Pipeline: Airflow · Warehouse: AWS Redshift · Visualization: Tableau · Data Quality: Great Expectations</div>
+  </div>
+</div>
+
+<script>
+// ── CHART DEFAULTS ──
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#243656';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+const MONTHS_24 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL = ['Jan 24','Feb 24','Mar 24','Apr 24','May 24','Jun 24','Jul 24','Aug 24','Sep 24','Oct 24','Nov 24','Dec 24',
+                     'Jan 25','Feb 25','Mar 25','Apr 25','May 25','Jun 25','Jul 25','Aug 25','Sep 25','Oct 25','Nov 25','Dec 25'];
+
+// ── TAB SWITCHING ──
+function showTab(idx) {
+  document.querySelectorAll('.dashboard-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
+}
+
+// ── D1: EXEC TREND CHART ──
+new Chart(document.getElementById('execTrendChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS_FULL,
+    datasets: [
+      { label: 'Budget (Cumulative)', data: [10.2,21.4,33.8,48.2,64.1,80.3,97.4,115.2,133.8,152.4,171.6,190.1,201.4,211.8,222.3,233.1,244.2,253.8,261.9,268.4,273.2,277.8,281.4,284.7], borderColor:'#1e90ff', backgroundColor:'#1e90ff18', tension:0.4, borderWidth:2, pointRadius:0 },
+      { label: 'Actual Cost', data: [10.8,22.3,35.4,50.1,67.2,84.8,103.1,122.4,141.2,160.8,181.1,200.3,211.4,219.3,null,null,null,null,null,null,null,null,null,null], borderColor:'#f97316', backgroundColor:'#f9731618', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[0] },
+      { label: 'Forecast (EAC)', data: [null,null,null,null,null,null,null,null,null,null,null,null,null,219.3,228.1,237.4,246.8,256.1,264.9,271.8,277.3,281.8,285.4,288.1], borderColor:'#eab308', backgroundColor:'transparent', tension:0.4, borderWidth:2, pointRadius:0, borderDash:[5,3] },
+      { label: 'Earned Value (EV)', data: [9.8,20.2,31.4,44.8,59.7,74.6,90.2,107.4,124.6,141.8,159.4,176.2,186.4,195.1,null,null,null,null,null,null,null,null,null,null], borderColor:'#22c55e', backgroundColor:'transparent', tension:0.4, borderWidth:1.5, pointRadius:0, borderDash:[3,2] }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ ticks:{callback:v=>'$'+v+'M'}, grid:{color:'#243656'} }, x:{ grid:{color:'#243656'}, ticks:{font:{size:10}, maxTicksLimit:12} } } }
+});
+
+// ── D1: CPI SPI CHART ──
+new Chart(document.getElementById('cpiSpiChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS_FULL,
+    datasets: [
+      { label: 'CPI', data: [1.01,0.99,1.00,0.98,0.97,0.98,0.99,0.97,0.96,0.95,0.97,0.96,0.97,0.96,null,null,null,null,null,null,null,null,null,null], borderColor:'#f97316', tension:0.4, borderWidth:2.5, pointRadius:2 },
+      { label: 'SPI', data: [1.02,1.01,0.99,1.00,0.98,0.97,0.98,0.96,0.95,0.94,0.95,0.94,0.95,0.94,null,null,null,null,null,null,null,null,null,null], borderColor:'#22c55e', tension:0.4, borderWidth:2.5, pointRadius:2 },
+      { label: 'Threshold (1.0)', data: Array(24).fill(1.0), borderColor:'#ffffff30', borderWidth:1, borderDash:[4,2], pointRadius:0 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ min:0.75, max:1.10, grid:{color:'#243656'} }, x:{ ticks:{font:{size:10}, maxTicksLimit:8}, grid:{color:'#243656'} } } }
+});
+
+// ── D1: PIE CHART ──
+new Chart(document.getElementById('budgetPieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Commercial', 'Infrastructure', 'Industrial', 'Residential'],
+    datasets: [{ data: [38.2, 47.6, 9.8, 4.4], backgroundColor: ['#1e90ff', '#22c55e', '#f97316', '#a855f7'], borderWidth: 2, borderColor: '#162032', hoverOffset: 8 }]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}}, tooltip:{callbacks:{label:ctx=>' '+ctx.label+': '+ctx.parsed+'%'}} }, cutout:'55%' }
+});
+
+// ── D2: COST CATEGORY CHART ──
+new Chart(document.getElementById('costCatChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS_24,
+    datasets: [
+      { label: 'Labor', data: [6.2,6.8,7.1,7.4,7.6,7.8,7.9,7.6,7.4,7.5,7.8,8.3], backgroundColor: '#1e90ff', stack:'a' },
+      { label: 'Material', data: [3.8,4.1,4.4,4.6,4.8,4.9,4.7,4.6,4.5,4.4,4.2,4.8], backgroundColor: '#22c55e', stack:'a' },
+      { label: 'Equipment', data: [1.8,1.9,2.1,2.2,2.4,2.1,2.0,2.1,2.3,2.0,1.9,2.0], backgroundColor: '#f97316', stack:'a' },
+      { label: 'Subcontractor', data: [4.2,4.6,5.1,5.4,5.8,6.1,6.4,6.1,5.8,5.6,5.2,6.0], backgroundColor: '#a855f7', stack:'a' }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ x:{stacked:true, grid:{color:'#243656'}}, y:{stacked:true, ticks:{callback:v=>'$'+v+'M'}, grid:{color:'#243656'}} } }
+});
+
+// ── D2: WATERFALL ──
+const waterfallData = [232.8, 2.9, -2.4, 1.2, 4.8, 219.3];
+const waterfallColors = ['#1e90ff', '#ef444490', '#22c55e90', '#ef444490', '#ef444490', '#f97316'];
+new Chart(document.getElementById('waterfallChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Budget (BAC)', 'Labor Overrun', 'Material Savings', 'Equip Overrun', 'SubCon Overrun', 'Actual Cost'],
+    datasets: [{ data: waterfallData, backgroundColor: waterfallColors, borderRadius:4, borderWidth:0 }]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false} }, scales:{ y:{ min:200, ticks:{callback:v=>'$'+v+'M'}, grid:{color:'#243656'} }, x:{grid:{display:false}, ticks:{font:{size:10}}} } }
+});
+
+// ── D2: FORECAST ACCURACY ──
+const forecastActual = [14.2,15.1,16.4,17.8,18.9,19.7,20.1,19.4,18.8,19.2,20.4,21.8];
+const forecastPred = [13.8,14.9,16.6,17.4,19.2,20.1,19.7,19.7,18.5,19.4,20.0,21.4];
+new Chart(document.getElementById('forecastAccChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS_24,
+    datasets: [
+      { label: 'Actual Cost', data: forecastActual, borderColor:'#1e90ff', backgroundColor:'#1e90ff15', tension:0.4, borderWidth:2.5, fill:true },
+      { label: 'Forecast', data: forecastPred, borderColor:'#eab308', backgroundColor:'transparent', tension:0.4, borderWidth:2, borderDash:[4,2] },
+      { label: '+5% Band', data: forecastActual.map(v=>+(v*1.05).toFixed(1)), borderColor:'#22c55e30', fill:'+1', backgroundColor:'#22c55e0a', borderWidth:0, pointRadius:0 },
+      { label: '-5% Band', data: forecastActual.map(v=>+(v*0.95).toFixed(1)), borderColor:'#22c55e30', backgroundColor:'transparent', borderWidth:0, pointRadius:0 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ ticks:{callback:v=>'$'+v+'M'}, grid:{color:'#243656'} }, x:{grid:{color:'#243656'}} } }
+});
+
+// ── D2: COST MIX RADAR ──
+new Chart(document.getElementById('costMixChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Labor', 'Material', 'Equipment', 'Subcontractor', 'Overhead', 'Contingency'],
+    datasets: [
+      { label: 'Budget %', data: [37.7, 25.1, 10.6, 26.9, 4.8, 3.1], borderColor:'#1e90ff', backgroundColor:'#1e90ff20', pointBackgroundColor:'#1e90ff' },
+      { label: 'Actual %', data: [41.2, 25.5, 11.8, 30.7, 5.1, 2.4], borderColor:'#f97316', backgroundColor:'#f9731620', pointBackgroundColor:'#f97316' }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ r:{ ticks:{display:false}, grid:{color:'#243656'}, pointLabels:{color:'#94a3b8', font:{size:11}} } } }
+});
+
+// ── D3: GANTT ──
+const ganttProjects = [
+  { name:'Phoenix Tower', type:'Commercial', s:0, e:6, prog:75, delay:'Critical', status:'red' },
+  { name:'Harbor Bridge', type:'Infrastructure', s:1, e:7, prog:60, delay:'31d late', status:'red' },
+  { name:'Summit Plaza', type:'Commercial', s:0, e:4, prog:95, delay:'7d late', status:'yellow' },
+  { name:'Metro Rail Ext.', type:'Infrastructure', s:2, e:8, prog:55, delay:'On time', status:'green' },
+  { name:'Riverside Apts', type:'Residential', s:3, e:6, prog:88, delay:'On time', status:'green' },
+  { name:'GreenField Ind.', type:'Industrial', s:1, e:5, prog:100, delay:'Complete', status:'green' },
+  { name:'Skyline Office', type:'Commercial', s:4, e:7, prog:72, delay:'On time', status:'green' },
+  { name:'Coastal Highway', type:'Infrastructure', s:0, e:8, prog:48, delay:'Critical', status:'red' },
+];
+const ganttBody = document.getElementById('ganttBody');
+const quarters = ['Q1\'24','Q2\'24','Q3\'24','Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25'];
+ganttProjects.forEach(p => {
+  let cells = quarters.map((q,i) => {
+    if(i >= p.s && i <= p.e) {
+      const fill = p.status === 'red' ? '#ef444460' : p.status === 'yellow' ? '#eab30860' : '#22c55e60';
+      return `<td style="padding:6px;"><div style="background:${fill};border-radius:3px;height:18px;"></div></td>`;
+    }
+    return `<td style="padding:6px;"></td>`;
+  }).join('');
+  const badge = p.status==='red' ? `<span class="badge-red">${p.delay}</span>` : p.status==='yellow' ? `<span class="badge-yellow">${p.delay}</span>` : `<span class="badge-green">${p.delay}</span>`;
+  ganttBody.innerHTML += `<tr><td style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--text-primary);">${p.name}</td>${cells}<td style="padding:6px 12px;font-size:12px;">${p.prog}%</td><td style="padding:6px 12px;">${badge}</td></tr>`;
+});
+
+// ── D3: LABOR PRODUCTIVITY ──
+new Chart(document.getElementById('laborProdChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS_24,
+    datasets: [
+      { label: 'Commercial', data: [0.94,0.93,0.91,0.92,0.90,0.88,0.89,0.91,0.90,0.89,0.91,0.92], borderColor:'#1e90ff', tension:0.4, borderWidth:2, pointRadius:2 },
+      { label: 'Infrastructure', data: [0.96,0.95,0.93,0.94,0.92,0.90,0.91,0.89,0.90,0.91,0.92,0.93], borderColor:'#22c55e', tension:0.4, borderWidth:2, pointRadius:2 },
+      { label: 'Industrial', data: [1.01,1.02,1.03,1.04,1.03,1.04,1.05,1.04,1.03,1.04,1.04,1.04], borderColor:'#f97316', tension:0.4, borderWidth:2, pointRadius:2 },
+      { label: 'Target (1.0)', data: Array(12).fill(1.0), borderColor:'#ffffff30', borderWidth:1, borderDash:[4,2], pointRadius:0 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ min:0.82, max:1.10, grid:{color:'#243656'} }, x:{grid:{color:'#243656'}} } }
+});
+
+// ── D3: RESOURCE MATRIX ──
+new Chart(document.getElementById('resourceMatrixChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Phoenix Tower','Harbor Bridge','Summit Plaza','Metro Rail','Riverside','GreenField','Skyline','Coastal Hwy'],
+    datasets: [
+      { label: 'Labor Util %', data: [91,88,74,82,69,93,76,95], backgroundColor: '#1e90ff80', borderRadius:4 },
+      { label: 'Equip Util %', data: [78,84,62,91,55,72,60,88], backgroundColor: '#f9731680', borderRadius:4 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ max:105, ticks:{callback:v=>v+'%'}, grid:{color:'#243656'} }, x:{ticks:{font:{size:10}}, grid:{display:false}} } }
+});
+
+// ── D4: PARETO CHART ──
+const vendors = ['Apex Concrete','Sterling Steel','BuildRight Mech.','PrecisionElec','TerraGrade Civil','NorthStar HVAC','AlliedFrame Inc.','QuickSet Civil','EverBuild Elec.','ProForm Concrete'];
+const vendorSpend = [14.1,11.2,10.9,8.3,8.6,6.4,3.2,2.4,1.8,0.4];
+const cumPct = vendorSpend.reduce((acc,v,i) => {
+  const sum = vendorSpend.slice(0,i+1).reduce((a,b)=>a+b,0);
+  acc.push(+(sum/67.3*100).toFixed(1));
+  return acc;
+},[]);
+new Chart(document.getElementById('paretoChart'), {
+  type: 'bar',
+  data: {
+    labels: vendors,
+    datasets: [
+      { type:'bar', label:'Spend ($M)', data: vendorSpend, backgroundColor:'#1e90ff80', borderRadius:4, yAxisID:'y' },
+      { type:'line', label:'Cumulative %', data: cumPct, borderColor:'#f97316', backgroundColor:'transparent', borderWidth:2.5, pointRadius:3, yAxisID:'y2' }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ ticks:{callback:v=>'$'+v+'M'}, grid:{color:'#243656'} }, y2:{position:'right',min:0,max:110,ticks:{callback:v=>v+'%'},grid:{display:false}}, x:{ticks:{font:{size:10},maxRotation:40},grid:{display:false}} } }
+});
+
+// ── D4: VENDOR RANK LIST ──
+const vendorList = document.getElementById('vendorRankList');
+const vColors = ['#f97316','#1e90ff','#ef4444','#22c55e','#eab308','#a855f7','#14b8a6','#64748b','#94a3b8','#475569'];
+const vScores = [74,93,62,98,81,89,77,84,86,71];
+vendors.slice(0,8).forEach((v,i) => {
+  const pct = (vendorSpend[i]/14.1*100).toFixed(0);
+  const scoreColor = vScores[i] >= 90 ? 'var(--green)' : vScores[i] >= 75 ? 'var(--yellow)' : 'var(--red)';
+  vendorList.innerHTML += `<div class="vendor-rank">
+    <div class="vendor-rank-num">${i+1}</div>
+    <div class="vendor-name">${v}</div>
+    <div class="vendor-bar-wrap"><div class="vendor-bar" style="width:${pct}%;background:${vColors[i]};"></div></div>
+    <div class="vendor-amt">$${vendorSpend[i]}M</div>
+    <div class="vendor-score" style="color:${scoreColor};font-weight:700;">${vScores[i]}</div>
+  </div>`;
+});
+
+// ── D5: DQ TREND ──
+const days30 = Array.from({length:30},(_,i)=>`Dec ${i+1}`);
+new Chart(document.getElementById('dqTrendChart'), {
+  type: 'line',
+  data: {
+    labels: days30,
+    datasets: [
+      { label: 'Overall DQ Score', data: days30.map((_,i)=>+(98.4 + Math.sin(i*0.4)*0.6 + Math.random()*0.3).toFixed(2)), borderColor:'#22c55e', backgroundColor:'#22c55e15', tension:0.4, fill:true, pointRadius:1 },
+      { label: 'Labor Table', data: days30.map((_,i)=>+(99.2 + Math.sin(i*0.3)*0.4).toFixed(2)), borderColor:'#1e90ff', backgroundColor:'transparent', tension:0.4, pointRadius:1 },
+      { label: 'Cost Table', data: days30.map((_,i)=>+(98.8 + Math.sin(i*0.5)*0.8 - 0.2).toFixed(2)), borderColor:'#f97316', backgroundColor:'transparent', tension:0.4, pointRadius:1 },
+      { label: 'Threshold (99%)', data: Array(30).fill(99.0), borderColor:'#ffffff30', borderWidth:1, borderDash:[4,2], pointRadius:0 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ y:{ min:97, max:100.2, ticks:{callback:v=>v+'%'}, grid:{color:'#243656'} }, x:{ticks:{maxTicksLimit:10, font:{size:10}}, grid:{color:'#243656'}} } }
+});
+
+// ── D6: SHAP BARS ──
+const shapFeatures = [
+  { name:'SubContractor Spend Variance (%)', val:0.31, color:'#ef4444' },
+  { name:'CPI 3-Month Rolling Avg', val:0.24, color:'#f97316' },
+  { name:'Labor Hours vs Planned', val:0.18, color:'#eab308' },
+  { name:'Invoice Dispute Rate', val:0.11, color:'#a855f7' },
+  { name:'Schedule Delay Days', val:0.09, color:'#1e90ff' },
+  { name:'Material Cost Inflation YoY', val:0.07, color:'#14b8a6' },
+  { name:'SPI Last Quarter', val:0.05, color:'#22c55e' },
+  { name:'Vendor Performance Score', val:0.03, color:'#64748b' },
+];
+const shapDiv = document.getElementById('shapBars');
+shapFeatures.forEach(f => {
+  const pct = (f.val / 0.31 * 100).toFixed(0);
+  shapDiv.innerHTML += `<div class="shap-row">
+    <div class="shap-label">${f.name}</div>
+    <div class="shap-bar-wrap"><div class="shap-bar-fill" style="width:${pct}%;background:${f.color};">+${f.val}</div></div>
+    <div class="shap-val">${(f.val*100).toFixed(0)}%</div>
+  </div>`;
+});
+
+// ── D6: RISK DISTRIBUTION ──
+new Chart(document.getElementById('riskDistChart'), {
+  type: 'bar',
+  data: {
+    labels: ['0.0–0.1','0.1–0.2','0.2–0.3','0.3–0.4','0.4–0.5','0.5–0.6','0.6–0.7','0.7–0.8','0.8–0.9','0.9–1.0'],
+    datasets: [{
+      label: 'Record Count',
+      data: [162400,108300,74200,58100,42800,31400,22600,14800,9200,7318],
+      backgroundColor: ['#22c55e','#22c55e','#22c55e','#4ade80','#eab308','#eab308','#f97316','#ef4444','#ef4444','#dc2626'],
+      borderRadius: 4
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{display:false} }, scales:{ y:{ ticks:{callback:v=>v>=1000?v/1000+'k':v}, grid:{color:'#243656'} }, x:{ticks:{font:{size:10}}, grid:{display:false}} } }
+});
+
+// ── D6: RISK MATRIX (BUBBLE) ──
+new Chart(document.getElementById('riskMatrixChart'), {
+  type: 'bubble',
+  data: {
+    datasets: [
+      { label:'Critical', data:[{x:0.88,y:0.91,r:22},{x:0.87,y:0.88,r:28}], backgroundColor:'#ef444490', borderColor:'#ef4444' },
+      { label:'At Risk', data:[{x:0.93,y:0.79,r:18},{x:0.89,y:0.76,r:14}], backgroundColor:'#f9731690', borderColor:'#f97316' },
+      { label:'Monitor', data:[{x:0.95,y:0.64,r:20},{x:0.97,y:0.48,r:12}], backgroundColor:'#eab30890', borderColor:'#eab308' },
+      { label:'On Track', data:[{x:1.02,y:0.31,r:10},{x:1.04,y:0.22,r:14},{x:1.01,y:0.18,r:8}], backgroundColor:'#22c55e90', borderColor:'#22c55e' }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}} }, scales:{ x:{ min:0.80, max:1.10, title:{display:true,text:'CPI',color:'#94a3b8'}, grid:{color:'#243656'} }, y:{ min:0.10, max:1.00, title:{display:true,text:'Anomaly Score',color:'#94a3b8'}, grid:{color:'#243656'} } } }
+});
+</script>
+</body>
+</html>
